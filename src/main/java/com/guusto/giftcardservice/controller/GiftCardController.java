@@ -19,16 +19,11 @@ public class GiftCardController {
     @Autowired
     private GiftCardService giftCardService;
 
-/*
-    @Autowired
-    public GiftCardController(GiftCardService giftCardService) {
-        this.giftCardService = giftCardService;
-    }*/
 
     @GetMapping(value = "get-message")
     public String getMessage()
     {
-        return "Hello";
+        return "Welcome to Guusto .. !!";
     }
 
 

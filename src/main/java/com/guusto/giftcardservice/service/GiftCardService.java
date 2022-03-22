@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,12 +31,22 @@ public class GiftCardService {
 
     public ResponseEntity savePurchasedCards(List<GiftCard> giftCards) {
 
+        double totalPriceForTransaction = 0.0D;
+        double initialBalance = 0.0D;
+        Balance balance = new Balance();
         ResponseEntity responseEntity;
         long cliId = giftCards.get(0).getClientId();
-
-        Balance balance = balanceRepository.getById(cliId);
-        double initialBalance = balance.getBalance() ;
-        double totalPriceForTransaction = 0.0D;
+        Optional<Balance> currentBalance = balanceRepository.findById(cliId);
+        if ( currentBalance.isPresent())
+        {
+            balance = balanceRepository.getById(cliId);
+            initialBalance = balance.getBalance() ;
+        }
+        else
+        {
+            GiftCardController.log.debug( "Client not found : " + cliId );
+            return new ResponseEntity<>("Client is not registered..", HttpStatus.BAD_REQUEST);
+        }
 
         //Need to consider the total price for the particular transaction because balance is not enough for the complete trs ,then we need to return
         for (GiftCard giftCard : giftCards)
@@ -66,13 +77,16 @@ public class GiftCardService {
 
     private ResponseEntity processBalanceAmount(double latestBalance , List<GiftCard> giftCards , double totalPriceForTransaction ,Balance balanceEntity )
     {
-        double perTrsPrice = 0.0D;
+        double perTrsPrice;
+        int numberOfGifts =0;
         if (latestBalance >= totalPriceForTransaction) {
             for (GiftCard giftCard : giftCards) {
 
                 perTrsPrice = giftCard.getAmount() * giftCard.getQuantity();
                 latestBalance -= perTrsPrice;
+                numberOfGifts += giftCard.getQuantity();
                 giftCard.setBalance(latestBalance);
+                giftCard.setNumOfGiftCards(numberOfGifts);
 
             }
             if (latestBalance >= 0) {
